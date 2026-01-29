@@ -97,7 +97,7 @@ const Shop: React.FC<ShopProps> = ({ rods, ownedIds, activeId, coins, onBuy, onC
                           : 'bg-gray-800 text-gray-600 cursor-not-allowed'
                   }`}
                 >
-                  {isActive ? 'Current Rod' : isOwned ? 'Switch to this Rod' : 'Buy Upgrade'}
+                  {isActive ? 'Current Rod' : isOwned ? 'Switch Rod' : 'Buy Upgrade'}
                 </button>
               </div>
             );
@@ -108,4 +108,5 @@ const Shop: React.FC<ShopProps> = ({ rods, ownedIds, activeId, coins, onBuy, onC
   );
 };
 
+// Fixed: Add missing default export
 export default Shop;
