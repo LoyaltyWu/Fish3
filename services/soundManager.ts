@@ -28,6 +28,25 @@ class SoundManager {
     osc.stop(this.ctx!.currentTime + 0.5);
   }
 
+  playReel() {
+    this.init();
+    const now = this.ctx!.currentTime;
+    const osc = this.ctx!.createOscillator();
+    const gain = this.ctx!.createGain();
+    
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(200, now);
+    osc.frequency.linearRampToValueAtTime(400, now + 0.05);
+    
+    gain.gain.setValueAtTime(this.volume * 0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+    
+    osc.connect(gain);
+    gain.connect(this.ctx!.destination);
+    osc.start();
+    osc.stop(now + 0.05);
+  }
+
   playHook() {
     this.init();
     const now = this.ctx!.currentTime;
