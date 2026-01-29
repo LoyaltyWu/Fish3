@@ -18,7 +18,12 @@ const CatchResult: React.FC<CatchResultProps> = ({ fish, onCollect }) => {
   };
 
   // Scale fish visual based on length (normalized roughly)
-  const fishScale = Math.min(1.5, 0.5 + fish.length / 100);
+  const fishScale = Math.min(1.5, 0.5 + fish.length / 300);
+
+  // Format Weight
+  const weightStr = fish.weight >= 1000 
+    ? (fish.weight / 1000).toFixed(2) + 'kg'
+    : fish.weight + 'g';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
@@ -59,7 +64,7 @@ const CatchResult: React.FC<CatchResultProps> = ({ fish, onCollect }) => {
           <div className="grid grid-cols-2 gap-4 text-sm mt-2">
             <div className="flex flex-col items-center p-2 bg-white/5 rounded-lg">
               <span className="text-sky-300 text-[10px] uppercase font-bold">Weight</span>
-              <span className="text-lg font-mono">{fish.weight}g</span>
+              <span className="text-lg font-mono">{weightStr}</span>
             </div>
             <div className="flex flex-col items-center p-2 bg-white/5 rounded-lg">
               <span className="text-sky-300 text-[10px] uppercase font-bold">Length</span>

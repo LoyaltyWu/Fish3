@@ -159,7 +159,10 @@ const App: React.FC = () => {
     
     const isSuperSize = length >= def.maxLength * 0.9;
     const multiplier = RARITY_MULTIPLIERS[def.rarity];
-    let value = Math.floor((weight * 0.8 + length * 0.5) * multiplier);
+    
+    // Updated Gold Formula: (weight/100 * 0.8 + length * 0.5)
+    // Scale weight by dividing by 100 to balance with 1/10 rod prices
+    let value = Math.floor(((weight / 100) * 0.8 + length * 0.5) * multiplier);
     if (isSuperSize) value = Math.floor(value * 1.2);
 
     const fish: CaughtFish = {

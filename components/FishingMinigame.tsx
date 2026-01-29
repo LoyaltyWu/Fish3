@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FishDefinition, Rod, Rarity } from '../types';
 import { soundManager } from '../services/soundManager';
@@ -10,21 +9,23 @@ interface FishingMinigameProps {
 }
 
 const FishingMinigame: React.FC<FishingMinigameProps> = ({ fishDef, rod, onComplete }) => {
-  const containerHeight = 350; // Slightly smaller to accommodate the button
+  const containerHeight = 350; 
   const greenBarHeight = rod.barSize;
   const fishIndicatorSize = 30;
 
   // Positions (0 to containerHeight - size)
   const [barPos, setBarPos] = useState(containerHeight - greenBarHeight);
   const [fishPos, setFishPos] = useState(containerHeight / 2);
-  const [progress, setProgress] = useState(15);
+  const [progress, setProgress] = useState(20); // Start with some progress buffer
   const [isReeling, setIsReeling] = useState(false);
+  const [timeLeftAtZero, setTimeLeftAtZero] = useState(15.0);
 
   // Physics refs
   const barVel = useRef(0);
   const fishTarget = useRef(containerHeight / 2);
   const lastTime = useRef(performance.now());
-  const requestRef = useRef<number>();
+  // Added initial value 0 to fix "Expected 1 arguments, but got 0" error.
+  const requestRef = useRef<number>(0);
   
   // Failure tracking - Fixed 15 seconds (900 frames at 60fps)
   const failGrace = 900;
@@ -113,8 +114,12 @@ const FishingMinigame: React.FC<FishingMinigameProps> = ({ fishDef, rod, onCompl
           
           if (clampedNext <= 0) {
             zeroProgressCounter.current += 1;
+            // Update visual countdown
+            const remaining = Math.max(0, 15 - (zeroProgressCounter.current / 60));
+            setTimeLeftAtZero(remaining);
           } else {
             zeroProgressCounter.current = 0;
+            if (timeLeftAtZero !== 15.0) setTimeLeftAtZero(15.0);
           }
           
           return clampedNext;
@@ -156,66 +161,85 @@ const FishingMinigame: React.FC<FishingMinigameProps> = ({ fishDef, rod, onCompl
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="flex flex-col items-center space-y-8">
-        <div 
-          className="relative w-24 bg-black/80 rounded-xl border-4 border-gray-600 flex flex-col items-center"
-          style={{ height: containerHeight + 8 }}
-        >
-          {/* Escape Warning Overlay */}
-          {zeroProgressCounter.current > 0 && (
-            <div 
-              className="absolute inset-0 bg-red-900/40 pointer-events-none rounded-lg transition-opacity duration-300"
-              style={{ opacity: dangerPercent }}
-            ></div>
-          )}
-
-          {/* Progress Bar (Side) */}
-          <div className="absolute -right-12 bottom-0 w-4 bg-gray-800 rounded-full h-full overflow-hidden border-2 border-gray-600">
-            <div 
-              className={`absolute bottom-0 w-full transition-all duration-100 ${progress < 20 ? 'bg-red-500 animate-pulse' : 'bg-green-400'}`}
-              style={{ height: `${progress}%` }}
-            ></div>
-          </div>
-
-          {/* Green Bar (Catcher) */}
-          <div 
-            className="absolute w-16 left-1 rounded-md fishing-green-bar"
-            style={{ height: greenBarHeight, top: barPos }}
-          ></div>
-
-          {/* Fish Indicator */}
-          <div 
-            className="absolute w-12 h-12 flex items-center justify-center fish-indicator"
-            style={{ top: fishPos, left: '50%', transform: 'translateX(-50%)' }}
-          >
-            <span className="text-3xl" style={{ filter: `drop-shadow(0 0 10px ${fishDef.color})` }}>
-              {fishDef.icon}
-            </span>
-          </div>
-
-          <div className="absolute -top-10 text-white font-bold whitespace-nowrap text-sm">
-            {zeroProgressCounter.current > (failGrace * 0.7) ? '⚠️ 15s WARNING! ⚠️' : (fishDef.rarity === Rarity.LEGENDARY ? '🚨 LEGENDARY! 🚨' : 'Hold Reel!')}
-          </div>
+      <div className="flex flex-col items-center space-y-6">
+        {/* Status Header */}
+        <div className="text-center">
+            {zeroProgressCounter.current > 0 ? (
+                <div className="bg-red-600 px-4 py-1 rounded-full animate-pulse border-2 border-white">
+                   <span className="text-white font-black">脱钩倒计时: {timeLeftAtZero.toFixed(1)}s</span>
+                </div>
+            ) : (
+                <div className="text-white font-bold text-lg drop-shadow-md">
+                   {fishDef.rarity === Rarity.LEGENDARY ? '🚨 传说中的鱼! 🚨' : '正在收线...'}
+                </div>
+            )}
         </div>
 
-        {/* Dedicated Reel Button */}
-        <div className="flex flex-col items-center space-y-2">
-          <button
-            onMouseDown={startReeling}
-            onMouseUp={stopReeling}
-            onMouseLeave={stopReeling}
-            onTouchStart={startReeling}
-            onTouchEnd={stopReeling}
-            className={`w-32 h-32 rounded-full border-8 transition-all flex flex-col items-center justify-center shadow-2xl active:scale-95 ${
-              isReeling 
-                ? 'bg-orange-500 border-orange-300 scale-105' 
-                : 'bg-slate-700 border-slate-500'
-            }`}
-          >
-            <span className="text-4xl mb-1">⚙️</span>
-            <span className="text-xs font-black uppercase tracking-tighter">Reel In</span>
-          </button>
-          <div className="text-[10px] text-white/50 uppercase font-bold">Press & Hold</div>
+        <div className="flex items-center space-x-12">
+            <div 
+            className="relative w-24 bg-black/80 rounded-xl border-4 border-gray-600 flex flex-col items-center overflow-visible"
+            style={{ height: containerHeight + 8 }}
+            >
+            {/* Escape Warning Overlay */}
+            {zeroProgressCounter.current > 0 && (
+                <div 
+                className="absolute inset-0 bg-red-900/60 pointer-events-none rounded-lg transition-opacity duration-300"
+                style={{ opacity: dangerPercent }}
+                ></div>
+            )}
+
+            {/* Progress Bar (Side) */}
+            <div className="absolute -right-12 bottom-0 w-4 bg-gray-800 rounded-full h-full overflow-hidden border-2 border-gray-600">
+                <div 
+                className={`absolute bottom-0 w-full transition-all duration-100 ${progress < 20 ? 'bg-red-500 animate-pulse' : 'bg-green-400 shadow-[0_0_10px_#4ade80]'}`}
+                style={{ height: `${progress}%` }}
+                ></div>
+            </div>
+
+            {/* Green Bar (Catcher) */}
+            <div 
+                className="absolute w-16 left-1 rounded-md fishing-green-bar transition-colors duration-200"
+                style={{ height: greenBarHeight, top: barPos, boxShadow: isReeling ? '0 0 15px #4ade80' : 'none' }}
+            ></div>
+
+            {/* Fish Indicator */}
+            <div 
+                className="absolute w-12 h-12 flex items-center justify-center fish-indicator"
+                style={{ top: fishPos, left: '50%', transform: 'translateX(-50%)' }}
+            >
+                <span className="text-4xl" style={{ filter: `drop-shadow(0 0 10px ${fishDef.color})` }}>
+                {fishDef.icon}
+                </span>
+            </div>
+            </div>
+
+            {/* Dedicated Reel Button Area */}
+            <div className="flex flex-col items-center space-y-4">
+            <div className="relative group">
+                {/* Visual ring showing the "pull" */}
+                <div className={`absolute -inset-4 rounded-full border-4 border-orange-500/30 transition-transform duration-200 ${isReeling ? 'scale-110 opacity-100 animate-ping' : 'scale-100 opacity-0'}`}></div>
+                
+                <button
+                    onMouseDown={startReeling}
+                    onMouseUp={stopReeling}
+                    onMouseLeave={stopReeling}
+                    onTouchStart={startReeling}
+                    onTouchEnd={stopReeling}
+                    className={`relative w-40 h-40 rounded-full border-8 transition-all flex flex-col items-center justify-center shadow-2xl active:scale-95 ${
+                    isReeling 
+                        ? 'bg-orange-500 border-orange-300 scale-105 shadow-orange-500/50' 
+                        : 'bg-slate-700 border-slate-500 shadow-black'
+                    }`}
+                >
+                    <span className={`text-6xl mb-1 transition-transform duration-75 ${isReeling ? 'rotate-45' : 'rotate-0'}`}>⚙️</span>
+                    <span className="text-sm font-black uppercase tracking-widest text-white drop-shadow-md">收线</span>
+                </button>
+            </div>
+            
+            <div className="flex flex-col items-center space-y-1">
+                <div className="text-[10px] text-white/70 uppercase font-black tracking-widest bg-black/40 px-3 py-1 rounded-full">长按按钮</div>
+            </div>
+            </div>
         </div>
       </div>
     </div>
